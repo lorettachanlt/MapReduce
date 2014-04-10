@@ -16,12 +16,15 @@ import org.apache.hadoop.io.Writable;
 
 public class DoublePair implements Writable {
     // Declare any variables here
+    double x;
+    double y;
 
     /**
      * Constructs a DoublePair with both doubles set to zero.
      */
     public DoublePair() {
-        // YOUR CODE HERE
+        x = 0;
+        y = 0;
 
     }
 
@@ -29,7 +32,8 @@ public class DoublePair implements Writable {
      * Constructs a DoublePair containing double1 and double2.
      */ 
     public DoublePair(double double1, double double2) {
-        // YOUR CODE HERE
+        x = double1;
+        y = double2;
 
     }
 
@@ -37,7 +41,7 @@ public class DoublePair implements Writable {
      * Returns the value of the first double.
      */
     public double getDouble1() {
-        // YOUR CODE HERE
+        return x;
         
     }
 
@@ -45,7 +49,7 @@ public class DoublePair implements Writable {
      * Returns the value of the second double.
      */
     public double getDouble2() {
-        // YOUR CODE HERE
+        return y;
         
     }
 
@@ -53,7 +57,7 @@ public class DoublePair implements Writable {
      * Sets the first double to val.
      */
     public void setDouble1(double val) {
-        // YOUR CODE HERE
+        x = val;
 
     }
 
@@ -61,7 +65,7 @@ public class DoublePair implements Writable {
      * Sets the second double to val.
      */
     public void setDouble2(double val) {
-        // YOUR CODE HERE
+        y = val;
 
     }
 
@@ -69,7 +73,8 @@ public class DoublePair implements Writable {
      * write() is required for implementing Writable.
      */
     public void write(DataOutput out) throws IOException {
-        // YOUR CODE HERE
+        out.writeDouble(x);
+        out.writeDouble(y);
 
     }
 
@@ -77,7 +82,8 @@ public class DoublePair implements Writable {
      * readFields() is required for implementing Writable.
      */
     public void readFields(DataInput in) throws IOException {
-        // YOUR CODE HERE
+        x = in.readDouble();
+        y = in.readDouble();
 
     }
 }

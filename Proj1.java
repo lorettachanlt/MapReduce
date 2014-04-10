@@ -32,7 +32,7 @@ public class Proj1{
     /*
      * Inputs is a set of (docID, document contents) pairs.
      */
-    public static class Map1 extends Mapper<WritableComparable, Text, Text, Text> {
+    public static class Map1 extends Mapper<WritableComparable, Text, Text, DoublePair> {
         /** Regex pattern to find words (alphanumeric + _). */
         final static Pattern WORD_PATTERN = Pattern.compile("\\w+");
 
@@ -58,9 +58,44 @@ public class Proj1{
             throws IOException, InterruptedException {
                 Matcher matcher = WORD_PATTERN.matcher(docContents.toString());
                 Func func = funcFromNum(funcNum);
+                ArrayList<String> alldemwords = new ArrayList<String>();
+                ArrayList<Integer> targetwordindex = new ArrayList<Integer>();
+                int index = 0;
 
-                // YOUR CODE HERE
+                while (matcher.find()) {
+                    String word = matcher.group().toLowerCase();
+                    alldemwords.add(word);
+                    if (word.equals(targetGram) && targetwordindex.contains(index) == false) {
+                        targetwordindex.add(index);
+                    }
+                    index ++;
+                }
 
+                double distance = 0;
+                int count2 = 0;
+    
+                for (int count1 = 0; count1 < alldemwords.size(); count1 ++) {
+                    String word = alldemwords.get(count1);
+                    if (targetwordindex.size() == 0) {
+                        distance = Double.POSITIVE_INFINITY;
+                    }
+                    else {
+                        while (count2 < targetwordindex.size()-1) {
+                            if ((targetwordindex.get(count2+1) - count1) < (count1 - targetwordindex.get(count2))) {
+                                count2++;
+                            } else {
+                                break;
+                            }
+                        }
+                        if (targetwordindex.get(count2) > count1) {
+                            distance = targetwordindex.get(count2) - count1;
+                        } 
+                        else {
+                            distance = count1 - targetwordindex.get(count2);
+                        }
+                    }
+                    context.write(new Text(word), new DoublePair(func.f(distance), 1));
+                }
             }
 
         /** Returns the Func corresponding to FUNCNUM*/
@@ -94,29 +129,41 @@ public class Proj1{
     }
 
     /** Here's where you'll be implementing your combiner. It must be non-trivial for you to receive credit. */
-    public static class Combine1 extends Reducer<Text, Text, Text, Text> {
-
+    public static class Combine1 extends Reducer<Text, DoublePair, Text, DoublePair> {
         @Override
-            public void reduce(Text key, Iterable<Text> values,
+            public void reduce(Text key, Iterable<DoublePair> values,
                     Context context) throws IOException, InterruptedException {
-
-                 // YOUR CODE HERE
-
+                double Sw = 0;
+                double Aw = 0;
+                for (DoublePair value: values) {
+                    Sw += value.getDouble1();  
+                    Aw += value.getDouble2();          
+                }
+                context.write(key, new DoublePair(Sw, Aw));
             }
     }
 
 
-    public static class Reduce1 extends Reducer<Text, Text, DoubleWritable, Text> {
+    public static class Reduce1 extends Reducer<Text, DoublePair, DoubleWritable, Text> {
         @Override
-            public void reduce(Text key, Iterable<Text> values,
+            public void reduce(Text key, Iterable<DoublePair> values,
                     Context context) throws IOException, InterruptedException {
-
-                // YOUR CODE HERE
+                double Aw = 0;
+                double Sw = 0;
+                double result = 0.0;
+                for (DoublePair value: values) {
+                    Aw += value.getDouble2();
+                    Sw += value.getDouble1();
+                }
+                if (Sw > 0) {
+                    result = -(Sw*(Math.pow((Math.log(Sw)),3)))/Aw;
+                }
+                context.write(new DoubleWritable(result), key);
 
             }
     }
 
-    public static class Map2 extends Mapper<DoubleWritable, Text, DoubleWritable, Text> {
+    public static class Map2 extends Mapper<DoubleWritable, Text, DoubleWritable, Text>  {
         //maybe do something, maybe don't
     }
 
@@ -142,8 +189,17 @@ public class Proj1{
         @Override
             public void reduce(DoubleWritable key, Iterable<Text> values,
                     Context context) throws IOException, InterruptedException {
-
-                 // YOUR CODE HERE
+            
+            while (n < N_TO_OUTPUT) {
+                for (Text value: values) {
+                    if (key.getDouble1() < 0) {
+                        double x = -key.getDouble1();
+                        key.setDouble1(x);
+                    }
+                    context.write(key, value);
+                    n++;
+                }
+            }
 
             }
     }
@@ -205,7 +261,7 @@ public class Proj1{
 
             /* You may need to change things here */
             firstJob.setMapOutputKeyClass(Text.class);
-            firstJob.setMapOutputValueClass(Text.class);
+            firstJob.setMapOutputValueClass(DoublePair.class);
             firstJob.setOutputKeyClass(DoubleWritable.class);
             firstJob.setOutputValueClass(Text.class);
             /* End region where we expect you to perhaps need to change things. */
